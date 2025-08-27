@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スクレイピング結果 - Host2 スクレイピングツール</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(81, 207, 102, 0.3);
+        }
+        
+        .results-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .results-info h3 {
+            margin: 0 0 15px 0;
+            color: #495057;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            color: #212529;
+            font-size: 1.2em;
+        }
+        
+        .tab-container {
+            margin-bottom: 30px;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 20px;
+        }
+        
+        .tab-button {
+            padding: 15px 30px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab-button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-button:hover {
+            color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .data-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .data-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .url-link {
+            color: #667eea;
+            text-decoration: none;
+            word-break: break-all;
+        }
+        
+        .url-link:hover {
+            text-decoration: underline;
+        }
+        
+        .height-badge {
+            background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            font-size: 1.1em;
+        }
+        
+        .export-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .search-box {
+            margin-bottom: 20px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .data-table {
+                font-size: 14px;
+            }
+            
+            .data-table th,
+            .data-table td {
+                padding: 8px;
+            }
+            
+            .nav-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>スクレイピング結果</h1>
+            <p>取得したデータを確認できます</p>
+        </div>
+        
+        <div class="content">
+            <div class="nav-buttons">
+                <a href="/" class="btn btn-primary">← ホームに戻る</a>
+                {% if results.filename %}
+                <a href="/download/{{ results.filename }}" class="btn btn-success">📥 Excelファイルをダウンロード</a>
+                {% endif %}
+            </div>
+            
+            {% if results.timestamp %}
+            <div class="results-info">
+                <h3>📊 取得結果サマリー</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">取得日時</div>
+                        <div class="info-value">{{ results.timestamp }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">店舗数</div>
+                        <div class="info-value">{{ results.shop_data|length }}件</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">スタッフ数</div>
+                        <div class="info-value">{{ results.staff_data|length }}名</div>
+                    </div>
+                    {% if results.filename %}
+                    <div class="info-item">
+                        <div class="info-label">ファイル名</div>
+                        <div class="info-value">{{ results.filename }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-button active" onclick="showTab('shop')">🏪 店舗情報 ({{ results.shop_data|length }}件)</button>
+                    {% if results.staff_data %}
+                    <button class="tab-button" onclick="showTab('staff')">👥 スタッフ情報 ({{ results.staff_data|length }}名)</button>
+                    {% endif %}
+                </div>
+                
+                <!-- 店舗情報タブ -->
+                <div id="shop-tab" class="tab-content active">
+                    <div class="search-box">
+                        <input type="text" id="shopSearch" class="search-input" placeholder="店舗名で検索...">
+                    </div>
+                    
+                    {% if results.shop_data %}
+                    <div class="table-container">
+                        <table class="data-table" id="shopTable">
+                            <thead>
+                                <tr>
+                                    <th>店舗名</th>
+                                    <th>URL</th>
+                                    <th>電話番号</th>
+                                    <th>営業時間</th>
+                                    <th>定休日</th>
+                                    <th>初回料金</th>
+                                    <th>イベント情報</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for shop in results.shop_data %}
+                                <tr>
+                                    <td><strong>{{ shop.店舗名 }}</strong></td>
+                                    <td><a href="{{ shop.店舗URL }}" target="_blank" class="url-link">{{ shop.店舗URL }}</a></td>
+                                    <td>{{ shop.電話番号 }}</td>
+                                    <td>{{ shop.営業時間 or '-' }}</td>
+                                    <td>{{ shop.定休日 or '-' }}</td>
+                                    <td>{{ shop.初回料金 or '-' }}</td>
+                                    <td>
+                                        {% if shop.イベント情報 %}
+                                            {% for event in shop.イベント情報 %}
+                                                <div style="margin-bottom: 5px; font-size: 12px; color: #667eea;">{{ event }}</div>
+                                            {% endfor %}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="no-data">
+                        <p>店舗情報がありません</p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- スタッフ情報タブ -->
+                {% if results.staff_data %}
+                <div id="staff-tab" class="tab-content">
+                    <div class="search-box">
+                        <input type="text" id="staffSearch" class="search-input" placeholder="スタッフ名で検索...">
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="data-table" id="staffTable">
+                            <thead>
+                                <tr>
+                                    <th>店舗名</th>
+                                    <th>スタッフ名</th>
+                                    <th>身長</th>
+                                    <th>誕生日</th>
+                                    <th>血液型</th>
+                                    <th>星座</th>
+                                    <th>年齢</th>
+                                    <th>画像URL</th>
+                                    <th>詳細</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for staff in results.staff_data %}
+                                <tr>
+                                    <td><strong>{{ staff.店舗名 }}</strong></td>
+                                    <td>{{ staff.名前 }}</td>
+                                    <td>
+                                        {% if staff.身長 %}
+                                        <span class="height-badge">{{ staff.身長 }}cm</span>
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ staff.誕生日 or '-' }}</td>
+                                    <td>{{ staff.血液型 or '-' }}</td>
+                                    <td>{{ staff.星座 or '-' }}</td>
+                                    <td>{{ staff.年齢 or '-' }}</td>
+                                    <td>
+                                        {% if staff.画像URL %}
+                                        <a href="{{ staff.画像URL }}" target="_blank" class="url-link">画像を見る</a>
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ staff.詳細 or '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="no-data">
+                <p>まだスクレイピングが実行されていません</p>
+                <a href="/" class="btn btn-primary">スクレイピングを開始</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            // タブボタンのアクティブ状態を切り替え
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // タブコンテンツの表示を切り替え
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+        
+        // 店舗情報の検索機能
+        document.getElementById('shopSearch').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const table = document.getElementById('shopTable');
+            const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+            
+            for (let row of rows) {
+                const shopName = row.cells[0].textContent.toLowerCase();
+                if (shopName.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+        });
+        
+        // スタッフ情報の検索機能
+        const staffSearch = document.getElementById('staffSearch');
+        if (staffSearch) {
+            staffSearch.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const table = document.getElementById('staffTable');
+                const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+                
+                for (let row of rows) {
+                    const staffName = row.cells[1].textContent.toLowerCase();
+                    const shopName = row.cells[0].textContent.toLowerCase();
+                    if (staffName.includes(searchTerm) || shopName.includes(searchTerm)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html> 
