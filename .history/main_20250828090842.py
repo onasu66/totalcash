@@ -407,21 +407,39 @@ with tab1:
         with col2:
             st.metric("📊 データ件数", f"{data_count}件")
         
-        # 一覧表示（削除ボタン付き）
-        st.write("**📋 データ一覧**")
+        # データ表示方法の選択
+        view_mode = st.radio("表示方法を選択", ["📋 一覧表示", "🗂️ 詳細表示"], horizontal=True)
         
-        # 各行ごとに削除ボタン付きで表示
-        for i, entry in enumerate(st.session_state.daily_data):
-            with st.container():
-                col1, col2 = st.columns([9, 1])
-                with col1:
-                    st.write(f"🕐 {entry['時刻']} | 👤 {entry['入力者']} | 🏪 {entry['店舗名']} | 💰 {entry['金額']:,}円 | 📝 {entry['内容']}")
-                with col2:
-                    if st.button("🗑️", key=f"delete_{i}", help="削除", use_container_width=True):
-                        st.session_state.daily_data.pop(i)
-                        save_data_to_file()
-                        st.rerun()
-                st.divider()
+        if view_mode == "📋 一覧表示":
+            # コンパクトな一覧表示（インデックス非表示）
+            st.dataframe(
+                df_today,
+                use_container_width=True,
+                height=400,  # 固定高さでスクロール可能
+                hide_index=True  # インデックス（時間の左の数字）を非表示
+            )
+        else:
+            # 詳細表示（各項目の横に削除ボタン）
+            st.write("**📝 個別項目**")
+            
+            # 最新データから表示（逆順）
+            for i in reversed(range(len(st.session_state.daily_data))):
+                entry = st.session_state.daily_data[i]
+                
+                # カード形式で表示
+                with st.container():
+                    col1, col2 = st.columns([8, 1])
+                    with col1:
+                        st.markdown(f"""
+                        **🕐 {entry['時刻']}** | **👤 {entry['入力者']}** | **🏪 {entry['店舗名']}**  
+                        💰 **{entry['金額']:,}円** | 📝 {entry['内容']}
+                        """)
+                    with col2:
+                        if st.button("🗑️", key=f"delete_{i}", help="削除", use_container_width=True):
+                            st.session_state.daily_data.pop(i)
+                            save_data_to_file()
+                            st.rerun()
+                    st.divider()
         
         # 店舗別集計
         if not df_today.empty:
