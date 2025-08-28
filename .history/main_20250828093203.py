@@ -407,59 +407,21 @@ with tab1:
         with col2:
             st.metric("📊 データ件数", f"{data_count}件")
         
-        # 簡潔なデータ一覧表示
+        # 一覧表示（削除ボタン付き）
         st.write("**📋 データ一覧**")
-        st.dataframe(
-            df_today,
-            use_container_width=True,
-            height=400,  # 固定高さでスクロール可能
-            hide_index=True  # インデックス非表示
-        )
         
-        # データ削除機能（100件対応）
-        st.write("**🗑️ データ削除**")
-        
-        # 削除方法の選択
-        delete_method = st.radio("削除方法を選択", ["📋 リストから選択", "🔢 番号で指定"], horizontal=True)
-        
-        if delete_method == "📋 リストから選択":
-            # 複数選択可能な削除機能
-            delete_indices = st.multiselect(
-                "削除したい項目を選択してください",
-                options=range(len(st.session_state.daily_data)),
-                format_func=lambda x: f"{x+1}. {st.session_state.daily_data[x]['時刻']} | {st.session_state.daily_data[x]['入力者']} | {st.session_state.daily_data[x]['店舗名']} | {st.session_state.daily_data[x]['金額']:,}円"
-            )
-            
-            if delete_indices:
-                col1, col2 = st.columns(2)
+        # 各行ごとに削除ボタン付きで表示
+        for i, entry in enumerate(st.session_state.daily_data):
+            with st.container():
+                col1, col2 = st.columns([9, 1])
                 with col1:
-                    if st.button("🗑️ 選択した項目を削除", key="delete_selected", use_container_width=True):
-                        # 逆順で削除（インデックスがずれないように）
-                        for idx in sorted(delete_indices, reverse=True):
-                            st.session_state.daily_data.pop(idx)
-                        save_data_to_file()
-                        st.success(f"✅ {len(delete_indices)}件のデータを削除しました")
-                        st.rerun()
+                    st.write(f"🕐 {entry['時刻']} | 👤 {entry['入力者']} | 🏪 {entry['店舗名']} | 💰 {entry['金額']:,}円 | 📝 {entry['内容']}")
                 with col2:
-                    st.info(f"選択中: {len(delete_indices)}件")
-        
-        else:  # 番号で指定
-            col1, col2 = st.columns(2)
-            with col1:
-                delete_number = st.number_input(
-                    "削除する行番号を入力（1から始まる）",
-                    min_value=1,
-                    max_value=len(st.session_state.daily_data),
-                    value=1
-                )
-            with col2:
-                if st.button("🗑️ 指定した行を削除", key="delete_by_number", use_container_width=True):
-                    idx = delete_number - 1  # 0ベースのインデックスに変換
-                    deleted_entry = st.session_state.daily_data[idx]
-                    st.session_state.daily_data.pop(idx)
-                    save_data_to_file()
-                    st.success(f"✅ 削除しました: {deleted_entry['店舗名']} - {deleted_entry['金額']:,}円")
-                    st.rerun()
+                    if st.button("🗑️", key=f"delete_{i}", help="削除", use_container_width=True):
+                        st.session_state.daily_data.pop(i)
+                        save_data_to_file()
+                        st.rerun()
+                st.divider()
         
         # 店舗別集計
         if not df_today.empty:
