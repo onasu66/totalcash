@@ -316,7 +316,77 @@ with tab1:
                 else:
                     st.warning("金額部分が認識できませんでした。2行に分けて入力してください。")
             else:
-                st.warning("店舗名と金額・バックを入力してください")
+                # 複数行の場合（連続入力対応）
+                st.info("複数行データを処理中...")
+                entries_added = 0
+                
+                i = 0
+                while i < len(lines):
+                    line = lines[i].strip()
+                    if not line:
+                        i += 1
+                        continue
+                    
+                    # 金額パターンをチェック
+                    money_patterns = [
+                        r'\d+\s*\.\s*\d+',
+                        r'\d+\s*\.\s*\d*\s*\.',
+                        r'\d+\s*\.\s*\d*'
+                    ]
+                    
+                    # 現在行に金額が含まれているかチェック
+                    line_without_time = re.sub(r'\d{1,2}:\d{2}', '', line)
+                    is_money_line = any(re.search(pattern, line_without_time) for pattern in money_patterns)
+                    
+                    if is_money_line:
+                        # 前の行を店舗名として使用
+                        if i > 0:
+                            store_name = lines[i-1].strip()
+                            content_input = line
+                            money = parse_money(line)
+                            
+                            entry = {
+                                "時刻": datetime.datetime.now().strftime("%H:%M"),
+                                "入力者": user_name,
+                                "店舗名": store_name,
+                                "内容": content_input,
+                                "金額": money
+                            }
+                            
+                            st.session_state.daily_data.append(entry)
+                            entries_added += 1
+                    
+                    # 次の行が金額行かチェック
+                    elif i + 1 < len(lines):
+                        next_line = lines[i + 1].strip()
+                        next_line_without_time = re.sub(r'\d{1,2}:\d{2}', '', next_line)
+                        next_is_money = any(re.search(pattern, next_line_without_time) for pattern in money_patterns)
+                        
+                        if next_is_money:
+                            # 現在行は店舗名、次の行は金額
+                            store_name = line
+                            content_input = next_line
+                            money = parse_money(next_line)
+                            
+                            entry = {
+                                "時刻": datetime.datetime.now().strftime("%H:%M"),
+                                "入力者": user_name,
+                                "店舗名": store_name,
+                                "内容": content_input,
+                                "金額": money
+                            }
+                            
+                            st.session_state.daily_data.append(entry)
+                            entries_added += 1
+                            i += 1  # 次の行をスキップ
+                    
+                    i += 1
+                
+                if entries_added > 0:
+                    save_data_to_file()
+                    st.success(f"✅ {entries_added}件のデータを追加しました")
+                else:
+                    st.warning("有効なデータが見つかりませんでした。店舗名と金額のペアを確認してください。")
         else:
             st.warning("入力者名と店舗名・金額データを入力してください")
     
