@@ -105,43 +105,116 @@ def load_data_from_file():
             return None
     return None
 
-# スマホ最適化のためのCSS
+# スマホ最適化 + コンパクトUIのためのCSS
 st.markdown("""
 <style>
+    /* 全体的な余白を削減 */
+    .main .block-container {
+        padding-top: 1rem;
+        padding-bottom: 0.5rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        font-size: 14px;
+        max-width: 100%;
+    }
+
+    /* セクション間の余白を削減 */
+    .element-container {
+        margin-bottom: 0.3rem;
+    }
+
+    /* タイトルと見出しの余白削減 */
+    h1, h2, h3, h4, h5, h6 {
+        margin-top: 0.3rem !important;
+        margin-bottom: 0.3rem !important;
+        line-height: 1.2 !important;
+    }
+
+    /* Streamlitの標準余白を削減 */
+    .stMarkdown {
+        margin-bottom: 0.3rem;
+    }
+
+    /* タブのスタイル調整 */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 5px;
+        gap: 3px;
+        margin-bottom: 0.5rem;
     }
     .stTabs [data-baseweb="tab"] {
-        height: 50px;
+        height: 40px;
         white-space: pre-wrap;
         background-color: #f0f2f6;
-        border-radius: 10px;
+        border-radius: 8px;
         color: #262730;
-        font-size: 16px;
+        font-size: 14px;
         font-weight: bold;
+        padding: 0 12px;
     }
     .stTabs [aria-selected="true"] {
         background-color: #ff6b6b;
         color: white;
     }
+
+    /* ボタンのスタイル調整 */
     .stButton > button {
-        height: 60px;
-        font-size: 18px;
+        height: 35px;
+        font-size: 13px;
         font-weight: bold;
-        border-radius: 10px;
+        border-radius: 6px;
+        margin-bottom: 0.2rem;
     }
+
+    /* 入力フィールドの高さ調整 */
     .stTextInput > div > div > input {
-        height: 50px;
-        font-size: 16px;
+        height: 35px;
+        font-size: 14px;
     }
     .stTextArea > div > div > textarea {
-        font-size: 16px;
+        min-height: 70px;
+        font-size: 14px;
     }
+
+    /* DataFrameの余白削減 */
+    .stDataFrame {
+        margin-bottom: 0.3rem;
+    }
+
+    /* data_editorの余白削減 */
+    .stDataEditor {
+        margin-bottom: 0.3rem;
+    }
+
+    /* メトリクスの余白削減 */
     .stMetric {
         background-color: #f0f2f6;
-        padding: 15px;
-        border-radius: 10px;
-        margin: 5px;
+        padding: 8px;
+        border-radius: 6px;
+        margin: 2px;
+    }
+
+    /* 区切り線の余白削減 */
+    hr {
+        margin-top: 0.8rem;
+        margin-bottom: 0.8rem;
+    }
+
+    /* モバイル対応 */
+    @media (max-width: 768px) {
+        .main .block-container {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+        
+        .stTabs [data-baseweb="tab"] {
+            font-size: 12px;
+            padding: 0 8px;
+            height: 35px;
+        }
+        
+        .stButton > button {
+            height: 32px;
+            font-size: 12px;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -225,9 +298,7 @@ with tab1:
         # 営業日変更を保存
         save_data_to_file()
     
-    # 営業日と現在時刻の表示
-    current_time = now.strftime("%H:%M")
-    st.info(f"📅 **営業日**: {business_date} | ⏰ **現在時刻**: {current_time} | 🔄 **リセット時刻**: 毎朝7:00")
+
     
     # 1回毎の入力フォーム（スマホ最適化）
     st.write("**📝 データ入力**")
@@ -249,7 +320,7 @@ with tab1:
             # コピペされたデータを解析
             lines = combined_input.strip().splitlines()
             
-            if len(lines) >= 2:
+            if len(lines) == 2:
                 # 1行目: 店舗名
                 store_name = lines[0].strip()
                 # 2行目: 金額・バック
@@ -272,6 +343,59 @@ with tab1:
                 # データを自動保存
                 save_data_to_file()
                 st.success(f"✅ 追加しました: {user_name} - {store_name} - {money:,}円")
+            
+            elif len(lines) > 2:
+                # 複数ペアの連続入力
+                st.info("複数行データを処理中...")
+                entries_added = 0
+                
+                # 金額パターン
+                money_patterns = [
+                    r'\d+\s*\.\s*\d+',
+                    r'\d+\s*\.\s*\d*\s*\.',
+                    r'\d+\s*\.\s*\d*'
+                ]
+                
+                i = 0
+                current_store = None
+                
+                while i < len(lines):
+                    line = lines[i].strip()
+                    if not line:
+                        i += 1
+                        continue
+                    
+                    # 現在行が金額行かチェック
+                    is_money_line = any(re.search(pattern, line) for pattern in money_patterns)
+                    
+                    if is_money_line:
+                        # 金額行の場合
+                        if current_store:
+                            # 店舗名がある場合、データを作成
+                            money = parse_money(line)
+                            
+                            entry = {
+                                "時刻": datetime.datetime.now().strftime("%H:%M"),
+                                "入力者": user_name,
+                                "店舗名": current_store,
+                                "内容": line,
+                                "金額": money
+                            }
+                            
+                            st.session_state.daily_data.append(entry)
+                            entries_added += 1
+                        # current_storeはそのまま維持（連続する金額は同一店舗）
+                    else:
+                        # 金額行でない場合は店舗名として設定
+                        current_store = line
+                    
+                    i += 1
+                
+                if entries_added > 0:
+                    save_data_to_file()
+                    st.success(f"✅ {entries_added}件のデータを追加しました")
+                else:
+                    st.warning("有効なデータペアが見つかりませんでした。")
                 
             elif len(lines) == 1:
                 # 1行だけの場合（店舗名と金額が一緒になっている可能性）
@@ -316,77 +440,7 @@ with tab1:
                 else:
                     st.warning("金額部分が認識できませんでした。2行に分けて入力してください。")
             else:
-                # 複数行の場合（連続入力対応）
-                st.info("複数行データを処理中...")
-                entries_added = 0
-                
-                i = 0
-                while i < len(lines):
-                    line = lines[i].strip()
-                    if not line:
-                        i += 1
-                        continue
-                    
-                    # 金額パターンをチェック
-                    money_patterns = [
-                        r'\d+\s*\.\s*\d+',
-                        r'\d+\s*\.\s*\d*\s*\.',
-                        r'\d+\s*\.\s*\d*'
-                    ]
-                    
-                    # 現在行に金額が含まれているかチェック
-                    line_without_time = re.sub(r'\d{1,2}:\d{2}', '', line)
-                    is_money_line = any(re.search(pattern, line_without_time) for pattern in money_patterns)
-                    
-                    if is_money_line:
-                        # 前の行を店舗名として使用
-                        if i > 0:
-                            store_name = lines[i-1].strip()
-                            content_input = line
-                            money = parse_money(line)
-                            
-                            entry = {
-                                "時刻": datetime.datetime.now().strftime("%H:%M"),
-                                "入力者": user_name,
-                                "店舗名": store_name,
-                                "内容": content_input,
-                                "金額": money
-                            }
-                            
-                            st.session_state.daily_data.append(entry)
-                            entries_added += 1
-                    
-                    # 次の行が金額行かチェック
-                    elif i + 1 < len(lines):
-                        next_line = lines[i + 1].strip()
-                        next_line_without_time = re.sub(r'\d{1,2}:\d{2}', '', next_line)
-                        next_is_money = any(re.search(pattern, next_line_without_time) for pattern in money_patterns)
-                        
-                        if next_is_money:
-                            # 現在行は店舗名、次の行は金額
-                            store_name = line
-                            content_input = next_line
-                            money = parse_money(next_line)
-                            
-                            entry = {
-                                "時刻": datetime.datetime.now().strftime("%H:%M"),
-                                "入力者": user_name,
-                                "店舗名": store_name,
-                                "内容": content_input,
-                                "金額": money
-                            }
-                            
-                            st.session_state.daily_data.append(entry)
-                            entries_added += 1
-                            i += 1  # 次の行をスキップ
-                    
-                    i += 1
-                
-                if entries_added > 0:
-                    save_data_to_file()
-                    st.success(f"✅ {entries_added}件のデータを追加しました")
-                else:
-                    st.warning("有効なデータが見つかりませんでした。店舗名と金額のペアを確認してください。")
+                st.warning("入力データを確認してください。")
         else:
             st.warning("入力者名と店舗名・金額データを入力してください")
     
@@ -407,24 +461,61 @@ with tab1:
         with col2:
             st.metric("📊 データ件数", f"{data_count}件")
         
-        # データ一覧表示（各行に削除ボタン付き）
-        st.write("**📋 データ一覧**")
+        # データ一覧表示（内部スクロール＋行内削除ボタン）
+        st.subheader("📋 データ一覧")
         
-        # 各データ行を削除ボタン付きで表示
-        for i, entry in enumerate(st.session_state.daily_data):
-            with st.container():
-                col1, col2 = st.columns([10, 1])
-                with col1:
-                    st.write(f"**{i+1}.** 🕐 {entry['時刻']} | 👤 {entry['入力者']} | 🏪 {entry['店舗名']} | 💰 **{entry['金額']:,}円** | 📝 {entry['内容']}")
-                with col2:
-                    if st.button("🗑️", key=f"delete_{i}", help="削除", use_container_width=True):
-                        st.session_state.daily_data.pop(i)
-                        save_data_to_file()
-                        st.rerun()
+        # データを表示（セル内削除ボタン付きエディタ）
+        if len(st.session_state.daily_data) > 0:
+            # データエディタ用のデータフレーム作成
+            editor_df = df_today[['時刻', '入力者', '店舗名', '金額', '内容']].copy()
+            editor_df['金額'] = editor_df['金額'].apply(lambda x: f"{x:,}円")
+            
+            # 削除用の列を追加
+            editor_df['🗑️ 削除'] = False  # チェックボックス列
+            
+            # データエディタ（セル内インタラクション可能）
+            edited_df = st.data_editor(
+                editor_df,
+                use_container_width=True,
+                hide_index=True,
+                height=300,
+                column_config={
+                    "時刻": st.column_config.TextColumn("🕐 時刻", disabled=True),
+                    "入力者": st.column_config.TextColumn("👤 入力者", disabled=True),
+                    "店舗名": st.column_config.TextColumn("🏪 店舗名", disabled=True),
+                    "金額": st.column_config.TextColumn("💰 金額", disabled=True),
+                    "内容": st.column_config.TextColumn("📝 内容", disabled=True),
+                    "🗑️ 削除": st.column_config.CheckboxColumn(
+                        "🗑️ 削除",
+                        help="削除する行にチェックを入れてください",
+                        default=False,
+                        width="small"
+                    )
+                },
+                key="data_editor"
+            )
+            
+            # 削除処理
+            if edited_df is not None:
+                # 削除にチェックが入った行を特定
+                delete_indices = edited_df[edited_df['🗑️ 削除'] == True].index.tolist()
                 
-                # 薄い区切り線
-                if i < len(st.session_state.daily_data) - 1:
-                    st.markdown("---")
+                if delete_indices:
+                    # 削除確認
+                    if st.button(f"🗑️ 選択した{len(delete_indices)}件を削除", type="primary"):
+                        # 逆順で削除（インデックスがずれないように）
+                        for idx in sorted(delete_indices, reverse=True):
+                            if idx < len(st.session_state.daily_data):
+                                st.session_state.daily_data.pop(idx)
+                        
+                        save_data_to_file()
+                        st.success(f"{len(delete_indices)}件のデータを削除しました")
+                        st.rerun()
+            
+            # 使い方説明
+            st.info("💡 **使い方**: 削除したい行の「🗑️ 削除」列にチェックを入れて、削除ボタンをクリックしてください")
+        else:
+            st.info("まだデータがありません。")
         
         # 店舗別集計
         if not df_today.empty:
@@ -448,15 +539,45 @@ with tab1:
                         # その入力者のデータをフィルタ
                         user_data = df_today[df_today['入力者'] == user]
                         
-                        # 店舗名と内容のみを表示
-                        display_data = user_data[['店舗名', '内容']].copy()
-                        
                         st.write(f"**{user}さんの入力内容**")
-                        st.dataframe(display_data, use_container_width=True, hide_index=True)
                         
-                        # その人の合計金額
-                        user_total = user_data['金額'].sum()
-                        st.metric(f"{user}さんの合計", f"{user_total:,}円")
+                        # 店舗ごとにグループ化してコンパクト表示
+                        stores = user_data['店舗名'].unique()
+                        
+                        for store in stores:
+                            # 各店舗のデータをフィルタ
+                            store_data = user_data[user_data['店舗名'] == store]
+                            
+                            # カスタムCSSでコンパクトな表示
+                            st.markdown(f"""
+                            <div style="
+                                background-color: #f8f9fa; 
+                                border-left: 4px solid #0066cc; 
+                                padding: 8px 12px; 
+                                margin: 8px 0 4px 0; 
+                                border-radius: 4px;
+                                font-weight: bold;
+                                font-size: 14px;
+                            ">
+                                🏪 {store}
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            # その店舗の内容を一行ずつコンパクトに表示
+                            for _, row in store_data.iterrows():
+                                st.markdown(f"""
+                                <div style="
+                                    background-color: white;
+                                    border: 1px solid #e9ecef;
+                                    padding: 6px 12px;
+                                    margin: 2px 0;
+                                    border-radius: 3px;
+                                    font-size: 13px;
+                                    line-height: 1.2;
+                                ">
+                                    {row['内容']}
+                                </div>
+                                """, unsafe_allow_html=True)
         
         # データ管理機能
         st.markdown("---")
